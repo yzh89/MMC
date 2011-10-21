@@ -25,7 +25,7 @@ public class XmlParser {
       public final static DoubleProbability P_ARRIVAL = new DoubleProbability(ARRIVAL_NUM, ARRIVAL_DEN);
 
       public static void main (String args[]) {
-          XmlParser temp = new XmlParser("xml/umlVersion6.xml",2);
+          XmlParser temp = new XmlParser("xml/umlVersion6.xml",6,true);
           System.out.println(temp.net.toString());
       }
       
@@ -37,11 +37,12 @@ public class XmlParser {
        
       }*/
       
-      public XmlParser(String fileName, int numOfPatient){
+      public XmlParser(String fileName, int numOfPatient, boolean Occupancy){
         XmlParser.NUM_PATIENTS=numOfPatient;
         Net.Builder<DoubleProbability> netBuild=new Net.Builder<DoubleProbability>();
         netBuild = XmlPartialParse(fileName,numOfPatient,netBuild);
         //TODO need make compute dispatch in the parser so that numOfPatient is the same
+        if (Occupancy==true) netBuild.addMachine(computeOccupancy());
         netBuild.addMachine(computeDispatch());
         net=netBuild.build();
       }
@@ -75,7 +76,7 @@ public class XmlParser {
         }
         return new DecisionTree.Terminal<TransitionVector<DoubleProbability>>(builder.build());
       }
-      
+ 
       public static Machine<DoubleProbability> computeDispatch() {
         Machine.Builder<DoubleProbability> builder = new Machine.Builder<DoubleProbability>("Dispatch");
         State.Builder<DoubleProbability> sBuilder = new State.Builder<DoubleProbability>("Dispatch", "None", computeTree(-1, new BitSet(), 0));
@@ -95,6 +96,45 @@ public class XmlParser {
           builder.addState(sBuilder.build());
         }
         return builder.build();
+      }
+
+      public static Machine<DoubleProbability> computeOccupancy(){
+        Machine.Builder<DoubleProbability> builder = new Machine.Builder<DoubleProbability>("Occupancy");
+        State.Builder<DoubleProbability> sBuilder;
+        for (int i = 0; i <= NUM_PATIENTS; i++) {
+          sBuilder = new State.Builder<DoubleProbability>("Occupancy", Integer.toString(i), computeOccupancyTree(-1, new BitSet(), 0));
+          sBuilder.setLabel("occupancy", Integer.toString(i));
+          builder.addState(sBuilder.build());
+        }
+        return builder.build();
+      }
+      
+      private static DecisionTree<TransitionVector<DoubleProbability>> computeOccupancyTree(int state, BitSet bedState, int nextBit) {
+        if (nextBit >= NUM_PATIENTS) {
+          
+          TransitionVector.Builder<DoubleProbability> builder = new TransitionVector.Builder<DoubleProbability>("Dispatch");
+          if (bedState.cardinality() < NUM_PATIENTS) {
+            int nextState=bedState.cardinality();
+            builder.setProbability(Integer.toString(nextState), DoubleProbability.ONE);
+          } else {
+            builder.setProbability(Integer.toString(NUM_PATIENTS), DoubleProbability.ONE);
+          }
+          return new DecisionTree.Terminal<TransitionVector<DoubleProbability>>(builder.build());
+          
+        }
+        
+        if (nextBit == state) {
+          BitSet set = (BitSet)bedState.clone();
+          set.set(nextBit);
+          return computeOccupancyTree(state, set, nextBit+1);
+        }
+        Predicate pred = new Predicate.Atom("Patient" + nextBit + ":ICP", "Patient", "NA");
+        BitSet unset = (BitSet)bedState.clone();
+        unset.clear(nextBit);
+        BitSet set = (BitSet)bedState.clone();
+        set.set(nextBit);
+        return new DecisionTree.Branch<TransitionVector<DoubleProbability>>(pred, computeOccupancyTree(state, unset, nextBit+1), computeOccupancyTree(state, set, nextBit+1));
+      
       }
 
 /*    No longer used

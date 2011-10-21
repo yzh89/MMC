@@ -17,15 +17,15 @@ import markov.TransitionMatrix;
 import parser.XmlParser;
 import util.Stack;
 
-public class TestICU1 {
+public class TestICU2 {
   public final static String PATIENT_MODEL_FILENAME = "xml/umlVersion6.xml";
-  public final static int NUM_PATIENTS = 8;
+  public final static int NUM_PATIENTS = 6;
   public final static int STEPS=10000000;  
 
   public static void main(String[] args) {
     long begin = System.nanoTime();
 
-    Net<DoubleProbability> net= (new XmlParser(PATIENT_MODEL_FILENAME,NUM_PATIENTS,false)).net;
+    Net<DoubleProbability> net= (new XmlParser(PATIENT_MODEL_FILENAME,NUM_PATIENTS,true)).net;
 
     System.out.println(net);
     Pattern arrivePattern = Pattern.compile("p(\\d+)arriving");
@@ -42,7 +42,7 @@ public class TestICU1 {
       AggregateMachine<?> machine = aNet.getMachine(aNet.size()-1);
       for (Integer val : machine.labels) {
         String name = aNet.dict.getName(val).tail().head();
-        if (name.equals("arriving")) continue;
+        if (name.equals("occupancy")) continue;
         
         Matcher match = arrivePattern.matcher(name);
         if (match.matches()) {
@@ -100,3 +100,4 @@ public class TestICU1 {
     System.out.println(rv.toCountString(STEPS));
   }
 }
+
