@@ -17,7 +17,7 @@ import markov.TransitionMatrix;
 import parser.XmlParser;
 import util.Stack;
 
-public class TestICU2 {
+public class TestICU3 {
   public final static String PATIENT_MODEL_FILENAME = "xml/umlVersion6.xml";
   public final static int NUM_PATIENTS = 7;
   public final static int STEPS=10000000;  
@@ -35,14 +35,14 @@ public class TestICU2 {
 
     System.out.println(aNet);
   
-    for (int i = aNet.size()-1; i >= 1; i--) {
+    for (int i = aNet.size()-1; i >= 2; i--) {
       aNet = aNet.multiply(i-1, i);
       System.out.println("\nAfter multiplying p" + (i-1));
       
       AggregateMachine<?> machine = aNet.getMachine(aNet.size()-1);
       for (Integer val : machine.labels) {
         String name = aNet.dict.getName(val).tail().head();
-        if (name.equals("occupancy")) continue;
+//        if (name.equals("occupancy")) continue;
         
         Matcher match = arrivePattern.matcher(name);
         if (match.matches()) {
@@ -56,14 +56,32 @@ public class TestICU2 {
       
       // System.out.println(aNet);
     }
-
+    
+    aNet = aNet.multiply(0, 1);
+    System.out.println("\nAfter multiplying p" + 0);
+    
+    AggregateMachine<?> machineTemp = aNet.getMachine(aNet.size()-1);
+    for (Integer val : machineTemp.labels) {
+      String name = aNet.dict.getName(val).tail().head();
+      if (name.equals("ICP")) continue;
+      
+      Matcher match = arrivePattern.matcher(name);
+      if (match.matches()) {
+        int label = Integer.parseInt(match.group(1));
+        if (label < 0) continue;
+      }
+      System.out.println("Summing out label " + aNet.dict.getName(val));
+      aNet = aNet.sum(val);
+    }
+    aNet = aNet.reduce(0);
+    
     AggregateMachine<DoubleProbability> machine = aNet.getMachine(0);
     System.out.println("\n" + AggregateMachine.query(aNet.dict, machine));
 
     TransitionMatrix<SymbolicProbability<DoubleProbability>> prob = machine.computeTransitionMatrix();
 
     try {
-      FileWriter fOut=new FileWriter("matOut2.txt");
+      FileWriter fOut=new FileWriter("matOut.txt");
       for (int i=0;i<aNet.getMachine(0).getNumStates();i++){
         fOut.write(aNet.getMachine(0).getState(i).getValueStack().head()+"\t");
       }
@@ -83,7 +101,7 @@ public class TestICU2 {
     System.out.println("Time taken = " + elapsed);
     System.exit(0);
 
-
+    
   }
 
 }

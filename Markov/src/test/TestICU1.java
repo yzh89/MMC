@@ -19,13 +19,13 @@ import util.Stack;
 
 public class TestICU1 {
   public final static String PATIENT_MODEL_FILENAME = "xml/umlVersion6.xml";
-  public final static int NUM_PATIENTS = 8;
+  public final static int NUM_PATIENTS = 7;
   public final static int STEPS=10000000;  
 
   public static void main(String[] args) {
     long begin = System.nanoTime();
 
-    Net<DoubleProbability> net= (new XmlParser(PATIENT_MODEL_FILENAME,NUM_PATIENTS,false)).net;
+    Net<DoubleProbability> net= (new XmlParser(PATIENT_MODEL_FILENAME,NUM_PATIENTS,true)).net;
 
     System.out.println(net);
     Pattern arrivePattern = Pattern.compile("p(\\d+)arriving");
